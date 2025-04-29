@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -7,9 +7,19 @@ import {
   Text,
   Image,
   TextInput,
+  Animated,
+  Easing,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert
 } from 'react-native';
 import axios from 'axios';
+import { MaterialIcons } from '@expo/vector-icons';
 import { BASE_URL } from '../constants';
+
+const { width, height } = Dimensions.get('window');
 
 const RegisterScreen = ({ navigation }) => {
   const [fullname, setFullname] = useState('');
@@ -18,21 +28,51 @@ const RegisterScreen = ({ navigation }) => {
   const [fullnameError, setFullnameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scrollViewRef = useRef();
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        speed: 5,
+        bounciness: 10,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
 
   const onRegisterSubmit = async () => {
     try {
-      let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
+      setIsLoading(true);
+      const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
 
-      if (email == '' || email == null) {
-        return setEmailError('*Required');
-      } else if (reg.test(email) === false) {
-        return setEmailError('enter valid email address');
-      }
-      if (password == '' || password == null) {
-        return setPasswordError('*Required');
-      }
-      if (fullname == '' || fullname == null) {
+      // Validation
+      if (!fullname) {
+        setIsLoading(false);
         return setFullnameError('*Required');
+      }
+      if (!email) {
+        setIsLoading(false);
+        return setEmailError('*Required');
+      } else if (!reg.test(email)) {
+        setIsLoading(false);
+        return setEmailError('Enter valid email address');
+      }
+      if (!password) {
+        setIsLoading(false);
+        return setPasswordError('*Required');
+      } else if (password.length < 6) {
+        setIsLoading(false);
+        return setPasswordError('Password must be at least 6 characters');
       }
 
       const response = await axios.post(`${BASE_URL}/api/users`, {
@@ -42,92 +82,198 @@ const RegisterScreen = ({ navigation }) => {
       });
 
       if (response.data) {
-        alert('Account registeration success');
-        navigation.navigate('LoginScreen');
+        Alert.alert(
+          'Success',
+          'Account registration successful',
+          [
+            { text: 'OK', onPress: () => navigation.navigate('LoginScreen') }
+          ]
+        );
       } else {
-        alert('Sorry! User registeration failed');
+        Alert.alert('Error', 'Registration failed. Please try again.');
       }
     } catch (err) {
-      alert('Sorry! User registeration failed');
+      Alert.alert(
+        'Error', 
+        err.response?.data?.message || 'Registration failed. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleEmailChange = (value) => {
-    setEmail(value);
-  };
-  const handlePasswordChange = (value) => {
-    setPassword(value);
-  };
-  const handleFullnameChange = (value) => {
-    setFullname(value);
+  const resetFullnameErrors = () => {
+    setFullnameError('');
   };
 
   const resetEmailErrors = () => {
-    setEmailError(null);
+    setEmailError('');
   };
+
   const resetPasswordErrors = () => {
-    setPasswordError(null);
+    setPasswordError('');
   };
-  const resetFullnameErrors = () => {
-    setFullnameError(null);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
+
+  const focusNextField = (nextField) => {
+    nextField?.current?.focus();
+  };
+
+  const emailRef = useRef();
+  const passwordRef = useRef();
 
   return (
     <SafeAreaView style={styles.container}>
-      <Image
-        source={require('../assets/logo.png')}
-        resizeMode='contain'
-        style={styles.logo}
-      />
-      <View style={styles.boxConatiner}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.header}>REGISTER</Text>
-          <Image
-            source={require('../assets/profilepic.png')}
-            resizeMode='contain'
-            style={styles.avatar}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View 
+            style={[
+              styles.backgroundCircle,
+              {
+                opacity: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.1],
+                }),
+              }
+            ]}
           />
-        </View>
+          
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            <Image
+              source={require('../assets/logo.png')}
+              resizeMode='contain'
+              style={styles.logo}
+            />
+          </Animated.View>
 
-        <View style={styles.buttonContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder='Name'
-            placeholderTextColor='#9B9B9B'
-            onChangeText={(text) => handleFullnameChange(text)}
-            onFocus={resetFullnameErrors}
-          />
-          {fullnameError ? <Text color='#8898AA'>{fullnameError}</Text> : null}
-          <TextInput
-            style={styles.input}
-            placeholder='E-mail'
-            placeholderTextColor='#9B9B9B'
-            onChangeText={(text) => handleEmailChange(text)}
-            onFocus={resetEmailErrors}
-          />
-          {emailError ? <Text color='#8898AA'>{emailError}</Text> : null}
-          <TextInput
-            style={styles.input}
-            placeholder='Password'
-            placeholderTextColor='#9B9B9B'
-            secureTextEntry
-            onChangeText={(value) => handlePasswordChange(value)}
-            onFocus={resetPasswordErrors}
-          />
-          {passwordError ? <Text color='#8898AA'>{passwordError}</Text> : null}
-          <TouchableOpacity style={styles.button} onPress={onRegisterSubmit}>
-            <Text style={styles.buttonText}>Register</Text>
-          </TouchableOpacity>
-          <View style={styles.linkContainer}>
-            <Text style={styles.loginText}>Already a Member ? </Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('LoginScreen')}
-            >
-              <Text style={styles.linkText}> LOGIN</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+          <Animated.View 
+            style={[
+              styles.boxContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
+            <View style={styles.headerContainer}>
+              <Text style={styles.header}>REGISTER</Text>
+              <View style={styles.underline} />
+              <Image
+                source={require('../assets/profilepic.png')}
+                resizeMode='contain'
+                style={styles.avatar}
+              />
+            </View>
+
+            <View style={styles.formContainer}>
+              <View style={styles.inputContainer}>
+                <MaterialIcons name="person" size={20} color="#71b79c" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder='Full Name'
+                  placeholderTextColor='#9B9B9B'
+                  onChangeText={setFullname}
+                  onFocus={resetFullnameErrors}
+                  value={fullname}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                  onSubmitEditing={() => focusNextField(emailRef)}
+                  blurOnSubmit={false}
+                />
+              </View>
+              {fullnameError ? (
+                <Text style={styles.errorMsg}>{fullnameError}</Text>
+              ) : null}
+
+              <View style={styles.inputContainer}>
+                <MaterialIcons name="email" size={20} color="#71b79c" style={styles.inputIcon} />
+                <TextInput
+                  ref={emailRef}
+                  style={styles.input}
+                  placeholder='Email'
+                  placeholderTextColor='#9B9B9B'
+                  onChangeText={setEmail}
+                  onFocus={resetEmailErrors}
+                  value={email}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  returnKeyType="next"
+                  onSubmitEditing={() => focusNextField(passwordRef)}
+                  blurOnSubmit={false}
+                />
+              </View>
+              {emailError ? (
+                <Text style={styles.errorMsg}>{emailError}</Text>
+              ) : null}
+
+              <View style={styles.inputContainer}>
+                <MaterialIcons name="lock" size={20} color="#71b79c" style={styles.inputIcon} />
+                <TextInput
+                  ref={passwordRef}
+                  style={styles.input}
+                  placeholder='Password'
+                  placeholderTextColor='#9B9B9B'
+                  secureTextEntry={!showPassword}
+                  onChangeText={setPassword}
+                  onFocus={resetPasswordErrors}
+                  value={password}
+                  returnKeyType="done"
+                  onSubmitEditing={onRegisterSubmit}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon} 
+                  onPress={togglePasswordVisibility}
+                >
+                  <MaterialIcons 
+                    name={showPassword ? "visibility" : "visibility-off"} 
+                    size={20} 
+                    color="#71b79c" 
+                  />
+                </TouchableOpacity>
+              </View>
+              {passwordError ? (
+                <Text style={styles.errorMsg}>{passwordError}</Text>
+              ) : null}
+
+              <TouchableOpacity 
+                style={[
+                  styles.button, 
+                  isLoading && styles.buttonDisabled
+                ]} 
+                onPress={onRegisterSubmit}
+                disabled={isLoading}
+              >
+                <Text style={styles.buttonText}>
+                  {isLoading ? 'CREATING ACCOUNT...' : 'REGISTER'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.linkContainer}>
+                <Text style={styles.loginText}>Already a Member? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
+                  <Text style={styles.linkText}>LOGIN</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -135,105 +281,139 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    marginHorizontal: 25,
+    backgroundColor: '#f8f9fa',
   },
-  socialButtonConatiner: {
-    paddingTop: 10,
-    display: 'flex',
-    flexDirection: 'row',
+  keyboardAvoidingView: {
+    flex: 1,
   },
-  socialButton: {
-    width: '10%',
-    elevation: 8,
-    backgroundColor: '#fce043',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    margin: 5,
-  },
-  boxConatiner: {
-    backgroundColor: '#414143',
-    padding: 15,
-    borderRadius: 10,
-  },
-  buttonContainer: {
-    paddingTop: 25,
-    display: 'flex',
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
   },
-  button: {
-    elevation: 8,
+  backgroundCircle: {
+    position: 'absolute',
+    width: width * 1.5,
+    height: width * 1.5,
+    borderRadius: width * 0.75,
     backgroundColor: '#71b79c',
-    borderRadius: 18,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    width: '50%',
-    marginBottom: 15,
-    marginTop: 15,
+    top: -width * 0.5,
+    left: -width * 0.25,
   },
-  buttonText: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: 'bold',
-    alignSelf: 'center',
-    textTransform: 'uppercase',
+  boxContainer: {
+    backgroundColor: '#fff',
+    padding: 25,
+    borderRadius: 20,
+    width: width * 0.85,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    marginVertical: 20,
   },
   headerContainer: {
-    textAlign: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   header: {
-    alignSelf: 'center',
     fontWeight: 'bold',
     fontSize: 26,
-    color: '#71b79c',
+    color: '#414143',
+    marginBottom: 5,
+  },
+  underline: {
+    height: 3,
+    width: 50,
+    backgroundColor: '#71b79c',
+    borderRadius: 3,
+    marginBottom: 20,
   },
   avatar: {
-    width: 64,
-    alignSelf: 'center',
-    height: 64,
-    marginTop: 15,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#71b79c',
   },
-  logo: {
-    width: '70%',
-    alignSelf: 'center',
-    height: 150,
-    marginTop: 15,
+  formContainer: {
+    width: '100%',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#71b79c',
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    marginVertical: 8,
+    backgroundColor: '#fff',
   },
   input: {
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
+    flex: 1,
+    height: 50,
     padding: 10,
-    width: '90%',
-    borderColor: '#71b79c',
-    borderRadius: 10,
-    backgroundColor: '#001220',
+    color: '#414143',
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  button: {
+    backgroundColor: '#71b79c',
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    elevation: 4,
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0c8b8',
+  },
+  buttonText: {
+    fontSize: 16,
     color: '#fff',
-  },
-  loginText: {
-    color: '#fff',
-  },
-  subHeaderText: {
-    color: '#EBEDF0',
-    fontSize: 12,
-    alignSelf: 'center',
-  },
-  registerText: {
-    color: '#fff',
-    alignSelf: 'center',
-    marginTop: 15,
-  },
-  linkText: {
-    color: '#71b79c',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   linkContainer: {
     flexDirection: 'row',
-  },
-  image: {
-    flex: 1,
     justifyContent: 'center',
+    marginTop: 15,
+  },
+  loginText: {
+    color: '#414143',
+  },
+  linkText: {
+    color: '#71b79c',
+    fontWeight: '600',
+  },
+  errorMsg: {
+    color: '#e74c3c',
+    fontSize: 12,
+    marginLeft: 15,
+    marginTop: -5,
+    marginBottom: 5,
+  },
+  logo: {
+    width: width * 0.7,
+    height: 150,
+    marginBottom: 20,
   },
 });
 

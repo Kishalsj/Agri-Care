@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import * as React from 'react';
+import { View, TouchableOpacity, Text } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -10,21 +11,41 @@ import TabBarLabel from '../components/TabBarLabel';
 const BottomTab = createBottomTabNavigator();
 const INITIAL_ROUTE_NAME = 'Home';
 
-export default function CustomerBottomTabNavigator({ navigation, route }) {
+function CustomTabButton({ children, onPress, focused }) {
   return (
-    <BottomTab.Navigator initialRouteName={INITIAL_ROUTE_NAME}>
+    <TouchableOpacity onPress={onPress} style={{ flex: 1 }}>
+      <View
+        style={{
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 6,
+          borderTopWidth: focused ? 2 : 0,
+          borderTopColor: focused ? '#000' : 'transparent',
+          backgroundColor: '#fff',
+        }}
+      >
+        {children}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+export default function CustomerBottomTabNavigator() {
+  return (
+    <BottomTab.Navigator initialRouteName={INITIAL_ROUTE_NAME} screenOptions={{ headerShown: false }}>
       <BottomTab.Screen
         name='Home'
         component={HomeScreen}
         options={{
-          tabBarLabel: ({ focused }) => (
-            <TabBarLabel focused={focused} name='Home' />
+          tabBarButton: (props) => (
+            <CustomTabButton {...props} focused={props.accessibilityState.selected} />
           ),
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon focused={focused} name='md-home' />
+            <View style={{ alignItems: 'center' }}>
+              <TabBarIcon name='home-outline' color={focused ? '#000' : '#888'} />
+              {/* <TabBarLabel focused={focused} name='Home' /> */}
+            </View>
           ),
-
-          headerShown: false,
         }}
       />
 
@@ -32,13 +53,15 @@ export default function CustomerBottomTabNavigator({ navigation, route }) {
         name='List'
         component={ListScreen}
         options={{
-          tabBarLabel: ({ focused }) => (
-            <TabBarLabel focused={focused} name='List' />
+          tabBarButton: (props) => (
+            <CustomTabButton {...props} focused={props.accessibilityState.selected} />
           ),
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon focused={focused} name='list' />
+            <View style={{ alignItems: 'center' }}>
+              <TabBarIcon name='list' color={focused ? '#000' : '#888'} />
+              {/* <TabBarLabel focused={focused} name='List' /> */}
+            </View>
           ),
-          headerShown: false,
         }}
       />
 
@@ -46,13 +69,15 @@ export default function CustomerBottomTabNavigator({ navigation, route }) {
         name='Profile'
         component={ProfileScreen}
         options={{
-          tabBarLabel: ({ focused }) => (
-            <TabBarLabel focused={focused} name='Profile' />
+          tabBarButton: (props) => (
+            <CustomTabButton {...props} focused={props.accessibilityState.selected} />
           ),
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon focused={focused} name='md-person' />
+            <View style={{ alignItems: 'center' }}>
+              <TabBarIcon name='person-circle-outline' color={focused ? '#000' : '#888'} />
+              {/* <TabBarLabel focused={focused} name='Profile' /> */}
+            </View>
           ),
-          headerShown: false,
         }}
       />
     </BottomTab.Navigator>

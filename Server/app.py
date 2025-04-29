@@ -12,64 +12,55 @@ import tensorflow as tf
 
 APP_ROOT = os.path.abspath(os.path.dirname(__file__))
 
+# Load the trained model
 model = load_model('plant_safe.h5', custom_objects={'BatchNormalization': BatchNormalization})
-
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-# Verify the model structure
 model.summary()
 
-# Loading labels
+# Load class labels
 with open('./labels.json', 'r') as f:
     category_names = json.load(f)
     img_classes = list(category_names.values())
 
-
-# Pre-processing images
+# Pre-process uploaded image
 def config_image_file(_image_path):
     predict = tf.keras.preprocessing.image.load_img(_image_path, target_size=(224, 224))
     predict_modified = tf.keras.preprocessing.image.img_to_array(predict)
-    predict_modified = predict_modified / 255
+    predict_modified = predict_modified / 255.0
     predict_modified = np.expand_dims(predict_modified, axis=0)
     return predict_modified
 
-
-# Predicting
+# Predict image
 def predict_image(image):
     result = model.predict(image)
-
     return np.array(result[0])
 
-
-# Working as the toString method
+# Prepare prediction output
 def output_prediction(filename):
-    _image_path = f"images/{filename}"
+    _image_path = os.path.join(APP_ROOT, "images", filename)
     img_file = config_image_file(_image_path)
     results = predict_image(img_file)
-    probability = np.max(results)
+    probability = float(np.max(results))
     index_max = np.argmax(results)
 
     return {
-            "prediction": str(img_classes[index_max]),
-            "probability": str(probability)
-        }
+        "prediction": img_classes[index_max],
+        "probability": f"{probability:.4f}"
+    }
 
-
-# Init app
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Database
+# Database config
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/heart_safe'
 
-# Init db
+# Initialize DB & Marshmallow
 db = SQLAlchemy(app)
-# Init ma
 ma = Marshmallow(app)
 
-
-# Model class User
+# User model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
@@ -81,24 +72,26 @@ class User(db.Model):
         self.fullname = fullname
         self.password = password
 
-
-# User Schema
+# User schema
 class UserSchema(ma.Schema):
     class Meta:
         fields = ('id', 'email', 'fullname', 'password')
 
-
-# Init schema
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
+# Root route (for health check or landing)
+@app.route('/')
+def home():
+    return jsonify({"message": "Agri-Care Flask backend is up and running."})
 
-# Create a user
+# Register user
 @app.route('/api/users', methods=['POST'])
 def add_user():
-    email = request.json['email']
-    fullname = request.json['fullname']
-    password = request.json['password'].encode('utf-8')
+    data = request.json
+    email = data['email']
+    fullname = data['fullname']
+    password = data['password'].encode('utf-8')
     hash_password = bcrypt.hashpw(password, bcrypt.gensalt())
 
     new_user = User(email, fullname, hash_password)
@@ -107,52 +100,43 @@ def add_user():
 
     return user_schema.jsonify(new_user)
 
-
 # Login user
 @app.route('/api/users/login', methods=['POST'])
 def login_user():
-    email = request.json['email']
-    password = request.json['password'].encode('utf-8')
+    data = request.json
+    email = data['email']
+    password = data['password'].encode('utf-8')
 
-    user = db.session.query(User).filter_by(email=email)
-    _user = users_schema.dump(user)
+    user = User.query.filter_by(email=email).first()
+    if user and bcrypt.checkpw(password, user.password.encode('utf-8')):
+        return user_schema.jsonify(user)
 
-    if len(_user) > 0:
-        hashed_password = _user[0]['password'].encode('utf-8')
-        if bcrypt.checkpw(password, hashed_password):
-            return users_schema.jsonify(user)
+    return jsonify({"message": "Invalid credentials"}), 401
 
-    return jsonify({"message": "Invalid credentials"})
-
-
-# Get All users
+# Get all users
 @app.route('/api/users', methods=['GET'])
 def get_users():
     all_users = User.query.all()
     result = users_schema.dump(all_users)
-
     return jsonify(result)
 
-
-# Image prediction
+# Predict disease from image
 @app.route('/api/predict', methods=['POST'])
 def get_disease_prediction():
     target = os.path.join(APP_ROOT, 'images/')
-
-    if not os.path.isdir(target):
-        os.mkdir(target)
+    os.makedirs(target, exist_ok=True)
 
     file = request.files.get('file')
+    if not file:
+        return jsonify({"error": "No file provided"}), 400
 
     filename = file.filename
-    destination = '/'.join([target, filename])
-
+    destination = os.path.join(target, filename)
     file.save(destination)
 
     result = output_prediction(filename)
     return jsonify(result)
 
-
-# Run Server
+# Run app
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=False)  # Replace the IP address with your own local IP address
+    app.run(host="0.0.0.0", port=5000, debug=False)

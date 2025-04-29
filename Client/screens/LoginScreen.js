@@ -7,12 +7,21 @@ import {
   Text,
   Image,
   TextInput,
+  Animated,
+  Easing,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
 import axios from 'axios';
 import _ from 'lodash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { MaterialIcons } from '@expo/vector-icons';
 import { BASE_URL } from '../constants';
+
+const { width, height } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -20,40 +29,63 @@ const LoginScreen = ({ navigation }) => {
   const [passwordError, setPasswordError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const fadeAnim = new Animated.Value(0);
+  const slideAnim = new Animated.Value(30);
 
   useEffect(() => {
     getAsyncData();
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        speed: 5,
+        bounciness: 10,
+        useNativeDriver: true,
+      })
+    ]).start();
   }, []);
 
   const storeData = async (value) => {
     try {
       await AsyncStorage.setItem('@user_data', JSON.stringify(value));
     } catch (e) {
-      // saving error
+      console.error('Storage error:', e);
     }
   };
+
   const getAsyncData = async () => {
     try {
       const data = await AsyncStorage.getItem('@user_data');
-
-      if (JSON.parse(data).email) {
+      if (data && JSON.parse(data).email) {
         navigation.navigate('HomeScreen');
       }
     } catch (e) {
-      // saving error
+      console.error('Storage error:', e);
     }
   };
 
   const onLoginSubmit = async () => {
     try {
+      setIsLoading(true);
+      setLoginError('');
+      
       let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
 
-      if (email == '' || email == null) {
+      if (!email) {
+        setIsLoading(false);
         return setEmailError('*Required');
       } else if (reg.test(email) === false) {
-        return setEmailError('enter valid email address');
+        setIsLoading(false);
+        return setEmailError('Enter valid email address');
       }
-      if (password == '' || password == null) {
+      if (!password) {
+        setIsLoading(false);
         return setPasswordError('*Required');
       }
 
@@ -70,83 +102,155 @@ const LoginScreen = ({ navigation }) => {
       }
     } catch (err) {
       setLoginError('Invalid credentials');
+    } finally {
+      setIsLoading(false);
     }
-  };
-  const handleEmailChange = (value) => {
-    setEmail(value);
-  };
-
-  const handlePasswordChange = (value) => {
-    setPassword(value);
   };
 
   const resetEmailErrors = () => {
-    setEmailError(null);
-    setLoginError(null);
+    setEmailError('');
+    setLoginError('');
   };
 
   const resetPasswordErrors = () => {
-    setPasswordError(null);
-    setLoginError(null);
+    setPasswordError('');
+    setLoginError('');
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Image
-        source={require('../assets/logo.png')}
-        resizeMode='contain'
-        style={styles.logo}
-      />
-      <View style={styles.boxConatiner}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.header}>LOGIN</Text>
-          <Image
-            source={require('../assets/profilepic.png')}
-            resizeMode='contain'
-            style={styles.avatar}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.container}>
+          <Animated.View 
+            style={[
+              styles.backgroundCircle,
+              {
+                opacity: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.1],
+                }),
+              }
+            ]}
           />
-        </View>
+          
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            <Image
+              source={require('../assets/logo.png')}
+              resizeMode='contain'
+              style={styles.logo}
+            />
+          </Animated.View>
 
-        <View style={styles.buttonContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder='E-mail'
-            placeholderTextColor='#9B9B9B'
-            onChangeText={(text) => handleEmailChange(text)}
-            onFocus={resetEmailErrors}
-          />
-          {emailError ? (
-            <Text style={styles.errorMsg}>{emailError}</Text>
-          ) : null}
-          <TextInput
-            style={styles.input}
-            placeholder='Password'
-            placeholderTextColor='#9B9B9B'
-            secureTextEntry
-            onChangeText={(value) => handlePasswordChange(value)}
-            onFocus={resetPasswordErrors}
-          />
-          {passwordError ? (
-            <Text style={styles.errorMsg}>{passwordError}</Text>
-          ) : null}
-          {loginError ? (
-            <Text style={styles.errorMsg}>{loginError}</Text>
-          ) : null}
-          <TouchableOpacity style={styles.button} onPress={onLoginSubmit}>
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
-          <View style={styles.linkContainer}>
-            <Text style={styles.loginText}>Not a Member ? </Text>
-            <Text
-              style={styles.linkText}
-              onPress={() => navigation.navigate('RegisterScreen')}
-            >
-              REGISTER
-            </Text>
-          </View>
-        </View>
-      </View>
-    </SafeAreaView>
+          <Animated.View 
+            style={[
+              styles.boxContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
+            <View style={styles.headerContainer}>
+              <Text style={styles.header}>LOGIN</Text>
+              <View style={styles.underline} />
+              <Image
+                source={require('../assets/profilepic.png')}
+                resizeMode='contain'
+                style={styles.avatar}
+              />
+            </View>
+
+            <View style={styles.formContainer}>
+              <View style={styles.inputContainer}>
+                <MaterialIcons name="email" size={20} color="#71b79c" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder='Email'
+                  placeholderTextColor='#9B9B9B'
+                  onChangeText={setEmail}
+                  onFocus={resetEmailErrors}
+                  value={email}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              {emailError ? (
+                <Text style={styles.errorMsg}>{emailError}</Text>
+              ) : null}
+
+              <View style={styles.inputContainer}>
+                <MaterialIcons name="lock" size={20} color="#71b79c" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder='Password'
+                  placeholderTextColor='#9B9B9B'
+                  secureTextEntry={!showPassword}
+                  onChangeText={setPassword}
+                  onFocus={resetPasswordErrors}
+                  value={password}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeIcon} 
+                  onPress={togglePasswordVisibility}
+                >
+                  <MaterialIcons 
+                    name={showPassword ? "visibility" : "visibility-off"} 
+                    size={20} 
+                    color="#71b79c" 
+                  />
+                </TouchableOpacity>
+              </View>
+              {passwordError ? (
+                <Text style={styles.errorMsg}>{passwordError}</Text>
+              ) : null}
+
+              {loginError ? (
+                <Text style={[styles.errorMsg, styles.loginError]}>{loginError}</Text>
+              ) : null}
+
+              <TouchableOpacity 
+                style={[
+                  styles.button, 
+                  isLoading && styles.buttonDisabled
+                ]} 
+                onPress={onLoginSubmit}
+                disabled={isLoading}
+              >
+                <Text style={styles.buttonText}>
+                  {isLoading ? 'LOGGING IN...' : 'LOGIN'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.linkContainer}>
+                <Text style={styles.loginText}>Not a Member? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
+                  <Text style={styles.linkText}>REGISTER</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.forgotPassword}
+                onPress={() => navigation.navigate('ForgotPasswordScreen')}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -154,108 +258,145 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    marginHorizontal: 25,
-  },
-  socialButtonConatiner: {
-    paddingTop: 10,
-    display: 'flex',
-    flexDirection: 'row',
-  },
-  socialButton: {
-    width: '10%',
-    elevation: 8,
-    backgroundColor: '#29b4cb',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    margin: 5,
-  },
-  boxConatiner: {
-    backgroundColor: '#414143',
-    padding: 15,
-    borderRadius: 10,
-  },
-  buttonContainer: {
-    paddingTop: 25,
-    display: 'flex',
-    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
-  button: {
-    elevation: 8,
+  backgroundCircle: {
+    position: 'absolute',
+    width: width * 1.5,
+    height: width * 1.5,
+    borderRadius: width * 0.75,
     backgroundColor: '#71b79c',
-    borderRadius: 18,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    width: '50%',
-    marginBottom: 15,
-    marginTop: 15,
+    top: -width * 0.5,
+    left: -width * 0.25,
   },
-  buttonText: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: 'bold',
-    alignSelf: 'center',
-    textTransform: 'uppercase',
+  boxContainer: {
+    backgroundColor: '#fff',
+    padding: 25,
+    borderRadius: 20,
+    width: width * 0.85,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    marginVertical: 20,
   },
   headerContainer: {
-    textAlign: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   header: {
-    alignSelf: 'center',
     fontWeight: 'bold',
     fontSize: 26,
-    color: '#71b79c',
+    color: '#414143',
+    marginBottom: 5,
+  },
+  underline: {
+    height: 3,
+    width: 50,
+    backgroundColor: '#71b79c',
+    borderRadius: 3,
+    marginBottom: 20,
   },
   avatar: {
-    width: 64,
-    alignSelf: 'center',
-    height: 64,
-    marginTop: 15,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#71b79c',
+  },
+  formContainer: {
+    width: '100%',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#71b79c',
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    marginVertical: 8,
+    backgroundColor: '#fff',
   },
   input: {
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
+    flex: 1,
+    height: 50,
     padding: 10,
-    width: '90%',
-    borderColor: '#71b79c',
-    borderRadius: 10,
-    backgroundColor: '#001220',
+    color: '#414143',
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  button: {
+    backgroundColor: '#71b79c',
+    borderRadius: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    elevation: 4,
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0c8b8',
+  },
+  buttonText: {
+    fontSize: 16,
     color: '#fff',
-  },
-  loginText: {
-    color: '#fff',
-  },
-  subHeaderText: {
-    color: '#EBEDF0',
-    fontSize: 12,
-    alignSelf: 'center',
-  },
-  registerText: {
-    color: '#fff',
-    alignSelf: 'center',
-    marginTop: 15,
-  },
-  linkText: {
-    color: '#71b79c',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   linkContainer: {
     flexDirection: 'row',
-  },
-  image: {
-    flex: 1,
     justifyContent: 'center',
-  },
-  logo: {
-    width: '70%',
-    alignSelf: 'center',
-    height: 150,
     marginTop: 15,
   },
+  loginText: {
+    color: '#414143',
+  },
+  linkText: {
+    color: '#71b79c',
+    fontWeight: '600',
+  },
   errorMsg: {
-    color: 'red',
-    textAlign: 'left',
+    color: '#e74c3c',
+    fontSize: 12,
+    marginLeft: 15,
+    marginTop: -5,
+    marginBottom: 5,
+  },
+  loginError: {
+    textAlign: 'center',
+    marginTop: 10,
+    fontSize: 14,
+  },
+  forgotPassword: {
+    alignSelf: 'center',
+    marginTop: 15,
+  },
+  forgotPasswordText: {
+    color: '#71b79c',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  logo: {
+    width: width * 0.7,
+    height: 150,
+    marginBottom: 20,
   },
 });
 
