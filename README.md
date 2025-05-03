@@ -5,6 +5,10 @@
 [![React Native](https://img.shields.io/badge/React%20Native-Mobile%20App-blue)](https://reactnative.dev/)
 [![Flask](https://img.shields.io/badge/Backend-Flask-lightgrey)](https://flask.palletsprojects.com/)
 
+<img src="https://github.com/user-attachments/assets/0d085fc1-4133-427f-8c4b-cd07ef9632d1" alt="App Screenshot" width="500"/>
+
+
+
 Agri-Care is an AI-powered mobile app built to help farmers and agriculture enthusiasts identify plant diseases early by analyzing images of plant leaves. The app leverages deep learning to recognize up to **10 different plant diseases**, providing useful insights to promote healthy plant growth.
 
 ---
