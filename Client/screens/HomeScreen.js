@@ -97,9 +97,9 @@ const Home = () => {
       <Text style={styles.conditionText}>
         Condition: {prediction?.prediction}
       </Text>
-      <Text style={styles.accuracyText}>
+      {/* <Text style={styles.accuracyText}>
         Accuracy: {prediction?.probability}%
-      </Text>
+      </Text> */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.reportButton}

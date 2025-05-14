@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -12,13 +12,12 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard
+  ScrollView,
+  Alert
 } from 'react-native';
 import axios from 'axios';
-import _ from 'lodash';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../constants';
 
 const { width, height } = Dimensions.get('window');
@@ -31,11 +30,12 @@ const LoginScreen = ({ navigation }) => {
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const fadeAnim = new Animated.Value(0);
-  const slideAnim = new Animated.Value(30);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scrollViewRef = useRef();
+  const passwordRef = useRef();
 
   useEffect(() => {
-    getAsyncData();
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -49,13 +49,15 @@ const LoginScreen = ({ navigation }) => {
         useNativeDriver: true,
       })
     ]).start();
+    
+    getAsyncData();
   }, []);
 
   const storeData = async (value) => {
     try {
       await AsyncStorage.setItem('@user_data', JSON.stringify(value));
     } catch (e) {
-      console.error('Storage error:', e);
+      // saving error
     }
   };
 
@@ -66,15 +68,13 @@ const LoginScreen = ({ navigation }) => {
         navigation.navigate('HomeScreen');
       }
     } catch (e) {
-      console.error('Storage error:', e);
+      // error reading value
     }
   };
 
   const onLoginSubmit = async () => {
     try {
       setIsLoading(true);
-      setLoginError('');
-      
       let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
 
       if (!email) {
@@ -94,8 +94,8 @@ const LoginScreen = ({ navigation }) => {
         password,
       });
 
-      if (_.isArray(response.data)) {
-        await storeData(response.data[0]);
+      if (response.data && response.data.email) {
+        await storeData(response.data);
         navigation.navigate('HomeScreen');
       } else {
         setLoginError('Invalid credentials');
@@ -121,13 +121,22 @@ const LoginScreen = ({ navigation }) => {
     setShowPassword(!showPassword);
   };
 
+  const focusNextField = (nextField) => {
+    nextField?.current?.focus();
+  };
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      >
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
           <Animated.View 
             style={[
               styles.backgroundCircle,
@@ -184,6 +193,9 @@ const LoginScreen = ({ navigation }) => {
                   value={email}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  returnKeyType="next"
+                  onSubmitEditing={() => focusNextField(passwordRef)}
+                  blurOnSubmit={false}
                 />
               </View>
               {emailError ? (
@@ -193,6 +205,7 @@ const LoginScreen = ({ navigation }) => {
               <View style={styles.inputContainer}>
                 <MaterialIcons name="lock" size={20} color="#71b79c" style={styles.inputIcon} />
                 <TextInput
+                  ref={passwordRef}
                   style={styles.input}
                   placeholder='Password'
                   placeholderTextColor='#9B9B9B'
@@ -200,6 +213,8 @@ const LoginScreen = ({ navigation }) => {
                   onChangeText={setPassword}
                   onFocus={resetPasswordErrors}
                   value={password}
+                  returnKeyType="done"
+                  onSubmitEditing={onLoginSubmit}
                 />
                 <TouchableOpacity 
                   style={styles.eyeIcon} 
@@ -215,9 +230,9 @@ const LoginScreen = ({ navigation }) => {
               {passwordError ? (
                 <Text style={styles.errorMsg}>{passwordError}</Text>
               ) : null}
-
+              
               {loginError ? (
-                <Text style={[styles.errorMsg, styles.loginError]}>{loginError}</Text>
+                <Text style={styles.errorMsg}>{loginError}</Text>
               ) : null}
 
               <TouchableOpacity 
@@ -239,27 +254,27 @@ const LoginScreen = ({ navigation }) => {
                   <Text style={styles.linkText}>REGISTER</Text>
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity 
-                style={styles.forgotPassword}
-                onPress={() => navigation.navigate('ForgotPasswordScreen')}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
             </View>
           </Animated.View>
-        </SafeAreaView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    paddingVertical: 20,
   },
   backgroundCircle: {
     position: 'absolute',
@@ -378,20 +393,6 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     marginTop: -5,
     marginBottom: 5,
-  },
-  loginError: {
-    textAlign: 'center',
-    marginTop: 10,
-    fontSize: 14,
-  },
-  forgotPassword: {
-    alignSelf: 'center',
-    marginTop: 15,
-  },
-  forgotPasswordText: {
-    color: '#71b79c',
-    fontSize: 14,
-    fontWeight: '500',
   },
   logo: {
     width: width * 0.7,
