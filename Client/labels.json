@@ -13,5 +13,8 @@
   "Tomato_Late_blight": "Tomato_Late_blight",
   "Tomato_Leaf_Mold": "Tomato_Leaf_Mold",
   "Tomato_Septoria_leaf_spot": "Tomato_Septoria_leaf_spot",
-  "Tomato_Spider_mites_Two_spotted_spider_mite": "Tomato_Spider_mites_Two_spotted_spider_mite"
+  "Tomato_Spider_mites_Two_spotted_spider_mite": "Tomato_Spider_mites_Two_spotted_spider_mite",
+  "Healthy":"Healthy",
+  "Leaf_Gall_Forming":"Leaf_Gall_Forming",
+  "leaf_spot_disease":"leaf_spot_disease"
 }

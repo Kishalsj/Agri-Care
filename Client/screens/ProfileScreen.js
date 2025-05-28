@@ -16,6 +16,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, Entypo, MaterialCommunityIcons, AntDesign, FontAwesome5, Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('screen');
 
@@ -33,7 +34,7 @@ const ProfileScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [helpModalVisible, setHelpModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('history');
+  const [activeTab, setActiveTab] = useState('medicines');
   
   // For animation
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -61,6 +62,14 @@ const ProfileScreen = ({ navigation, route }) => {
       name: 'Early Blight Treatment', 
       saveDate: '04/20/2025', 
       type: 'Fungal disease',
+      severity: 'High',
+      icon: 'leaf-maple',
+      causes: [
+        'Alternaria solani fungal infection',
+        'High humidity with moderate temperatures',
+        'Poor air circulation',
+        'Stressed or weakened plants'
+      ],
       treatments: [
         'Apply copper-based fungicide',
         'Remove and destroy infected plant parts',
@@ -73,6 +82,14 @@ const ProfileScreen = ({ navigation, route }) => {
       name: 'Powdery Mildew Treatment', 
       saveDate: '04/18/2025', 
       type: 'Fungal disease',
+      severity: 'Medium',
+      icon: 'leaf',
+      causes: [
+        'Fungal spores in the air',
+        'High humidity and poor air circulation',
+        'Overcrowded plants',
+        'Overhead watering'
+      ],
       treatments: [
         'Apply neem oil or sulfur-based fungicide',
         'Prune overcrowded plants to improve airflow',
@@ -85,6 +102,14 @@ const ProfileScreen = ({ navigation, route }) => {
       name: 'Nutrient Deficiency Treatment', 
       saveDate: '04/10/2025', 
       type: 'Nutrition',
+      severity: 'Low',
+      icon: 'nutrition',
+      causes: [
+        'Poor soil quality',
+        'Incorrect pH levels',
+        'Insufficient fertilization',
+        'Nutrient leaching'
+      ],
       treatments: [
         'Apply balanced NPK fertilizer',
         'Use compost tea for micronutrients',
@@ -93,6 +118,273 @@ const ProfileScreen = ({ navigation, route }) => {
       ]
     },
   ];
+
+  const [expandedTreatment, setExpandedTreatment] = useState(null);
+
+  // Add medicines data
+  const medicines = [
+    {
+      id: '1',
+      name: 'Copper Fungicide',
+      crop: 'Tomato',
+      type: 'Fungicide',
+      severity: 'Medium',
+      icon: 'medical-bag',
+      description: 'Effective against early blight and bacterial spot',
+      usage: [
+        'Mix 2-3 tablespoons per gallon of water',
+        'Apply every 7-10 days',
+        'Best applied in early morning or late evening',
+        'Avoid application during hot weather'
+      ],
+      precautions: [
+        'Wear protective clothing during application',
+        'Keep away from children and pets',
+        'Do not apply near water bodies',
+        'Store in cool, dry place'
+      ]
+    },
+    {
+      id: '2',
+      name: 'Neem Oil Solution',
+      crop: 'Bell Pepper',
+      type: 'Organic Pesticide',
+      severity: 'Low',
+      icon: 'leaf',
+      description: 'Natural pest control and disease prevention',
+      usage: [
+        'Mix 2 tablespoons per gallon of water',
+        'Apply every 7-14 days',
+        'Spray on both sides of leaves',
+        'Apply in early morning or evening'
+      ],
+      precautions: [
+        'Test on small area first',
+        'Avoid application in direct sunlight',
+        'Do not apply to stressed plants',
+        'Store in cool, dark place'
+      ]
+    },
+    {
+      id: '3',
+      name: 'Calcium Nitrate',
+      crop: 'Cinnamon',
+      type: 'Fertilizer',
+      severity: 'Low',
+      icon: 'nutrition',
+      description: 'Prevents blossom end rot and improves plant health',
+      usage: [
+        'Apply 1-2 tablespoons per plant',
+        'Mix with water for foliar application',
+        'Apply every 2-3 weeks',
+        'Best applied during growing season'
+      ],
+      precautions: [
+        'Do not mix with phosphate fertilizers',
+        'Keep away from direct sunlight',
+        'Store in airtight container',
+        'Wear gloves during application'
+      ]
+    },
+    {
+      id: '4',
+      name: 'Potassium Phosphite',
+      crop: 'Potato',
+      type: 'Fungicide',
+      severity: 'Medium',
+      icon: 'medical-bag',
+      description: 'Controls late blight and improves plant immunity',
+      usage: [
+        'Mix 1-2 tablespoons per gallon of water',
+        'Apply every 10-14 days',
+        'Spray on foliage and stems',
+        'Apply before disease symptoms appear'
+      ],
+      precautions: [
+        'Do not apply in hot weather',
+        'Keep away from water sources',
+        'Wear protective equipment',
+        'Store in cool, dry place'
+      ]
+    }
+  ];
+
+  const [expandedMedicine, setExpandedMedicine] = useState(null);
+
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'None': return '#4CAF50';
+      case 'Low': return '#8BC34A';
+      case 'Medium': return '#FF9800';
+      case 'High': return '#F44336';
+      case 'Very High': return '#9C27B0';
+      default: return '#FF9800';
+    }
+  };
+
+  const getCropColor = (crop) => {
+    switch (crop) {
+      case 'Cinnamon': return '#4CAF50'; // Green
+      case 'Tomato': return '#F44336';   // Red
+      case 'Bell Pepper': return '#FFC107'; // Yellow
+      case 'Potato': return '#795548';   // Brown
+      default: return '#71b79c';
+    }
+  };
+
+  const renderTreatmentItem = (treatment, index) => {
+    const isExpanded = expandedTreatment === index;
+    
+    return (
+      <TouchableOpacity 
+        style={[
+          styles.treatmentCard, 
+          isExpanded && styles.expandedCard
+        ]} 
+        key={treatment.id}
+        onPress={() => setExpandedTreatment(isExpanded ? null : index)}
+        activeOpacity={0.9}
+      >
+        <View style={styles.treatmentSummary}>
+          <View style={styles.treatmentIconContainer}>
+            <MaterialCommunityIcons 
+              name={treatment.icon} 
+              size={32} 
+              color="#71b79c" 
+            />
+          </View>
+          <View style={styles.treatmentInfo}>
+            <Text style={styles.treatmentName}>{treatment.name}</Text>
+            <View style={styles.treatmentTagContainer}>
+              <View style={[styles.treatmentTag, { backgroundColor: `${getSeverityColor(treatment.severity)}15` }]}>
+                <Text style={[styles.treatmentTagText, { color: getSeverityColor(treatment.severity) }]}>
+                  {treatment.type}
+                </Text>
+              </View>
+              {/* <Text style={styles.treatmentDate}>
+                Saved: {treatment.saveDate}
+              </Text> */}
+            </View>
+          </View>
+          <Animated.View style={styles.expandIcon}>
+            <MaterialIcons 
+              name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+              size={24} 
+              color="#71b79c" 
+            />
+          </Animated.View>
+        </View>
+        
+        {isExpanded && (
+          <Animated.View style={styles.expandedContent}>
+            <View style={styles.separator} />
+            
+            <View style={styles.treatmentDetailSection}>
+              <Text style={styles.detailSectionTitle}>Causes</Text>
+              <View style={styles.causesList}>
+                {treatment.causes.map((cause, idx) => (
+                  <View key={idx} style={styles.causeItem}>
+                    <MaterialIcons name="error-outline" size={20} color="#71b79c" />
+                    <Text style={styles.detailText}>{cause}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+            
+            <View style={styles.treatmentDetailSection}>
+              <Text style={styles.detailSectionTitle}>Treatment Steps</Text>
+              <View style={styles.treatmentsList}>
+                {treatment.treatments.map((step, idx) => (
+                  <View key={idx} style={styles.treatmentItem}>
+                    <MaterialIcons name="check-circle-outline" size={20} color="#71b79c" />
+                    <Text style={styles.detailText}>{step}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </Animated.View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderMedicineItem = (medicine, index) => {
+    const isExpanded = expandedMedicine === index;
+    const cropColor = getCropColor(medicine.crop);
+    
+    return (
+      <TouchableOpacity 
+        style={[
+          styles.treatmentCard, 
+          isExpanded && styles.expandedCard
+        ]} 
+        key={medicine.id}
+        onPress={() => setExpandedMedicine(isExpanded ? null : index)}
+        activeOpacity={0.9}
+      >
+        <View style={styles.treatmentSummary}>
+          <View style={styles.treatmentIconContainer}>
+            <MaterialCommunityIcons 
+              name={medicine.icon} 
+              size={32} 
+              color="#71b79c" 
+            />
+          </View>
+          <View style={styles.treatmentInfo}>
+            <Text style={styles.treatmentName}>{medicine.name}</Text>
+            <Text style={styles.medicineType}>{medicine.type}</Text>
+            <View style={[styles.cropTag, { backgroundColor: `${cropColor}15` }]}>
+              <Text style={[styles.cropTagText, { color: cropColor }]}>
+                For: {medicine.crop}
+              </Text>
+            </View>
+          </View>
+          <Animated.View style={styles.expandIcon}>
+            <MaterialIcons 
+              name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+              size={24} 
+              color="#71b79c" 
+            />
+          </Animated.View>
+        </View>
+        
+        {isExpanded && (
+          <Animated.View style={styles.expandedContent}>
+            <View style={styles.separator} />
+            
+            <View style={styles.treatmentDetailSection}>
+              <Text style={styles.detailSectionTitle}>Description</Text>
+              <Text style={styles.detailText}>{medicine.description}</Text>
+            </View>
+            
+            <View style={styles.treatmentDetailSection}>
+              <Text style={styles.detailSectionTitle}>Usage Instructions</Text>
+              <View style={styles.treatmentsList}>
+                {medicine.usage.map((step, idx) => (
+                  <View key={idx} style={styles.treatmentItem}>
+                    <MaterialIcons name="check-circle-outline" size={20} color="#71b79c" />
+                    <Text style={styles.detailText}>{step}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.treatmentDetailSection}>
+              <Text style={styles.detailSectionTitle}>Precautions</Text>
+              <View style={styles.causesList}>
+                {medicine.precautions.map((precaution, idx) => (
+                  <View key={idx} style={styles.causeItem}>
+                    <MaterialIcons name="warning-outline" size={20} color="#71b79c" />
+                    <Text style={styles.detailText}>{precaution}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </Animated.View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   useEffect(() => {
     getAsyncData();
@@ -195,100 +487,22 @@ const ProfileScreen = ({ navigation, route }) => {
 
   const renderTabContent = () => {
     switch(activeTab) {
-      case 'plants':
+      case 'medicines':
         return (
           <View style={styles.tabContentContainer}>
-            {userPlants.map(plant => (
-              <View key={plant.id} style={styles.plantItem}>
-                <Image source={{ uri: plant.image }} style={styles.plantImage} />
-                <View style={styles.plantDetails}>
-                  <Text style={styles.plantName}>{plant.name}</Text>
-                  <Text style={[
-                    styles.plantHealth, 
-                    plant.health === 'Healthy' ? styles.healthyText : styles.warningText
-                  ]}>
-                    {plant.health}
-                  </Text>
-                  <Text style={styles.plantLastChecked}>Last checked: {plant.lastChecked}</Text>
-                </View>
-                <TouchableOpacity style={styles.plantActionButton}>
-                  <AntDesign name="right" size={16} color="#71b79c" />
-                </TouchableOpacity>
-              </View>
-            ))}
+            {medicines.map(renderMedicineItem)}
           </View>
         );
       case 'treatments':
         return (
           <View style={styles.tabContentContainer}>
-            {savedTreatments.map(treatment => (
-              <View key={treatment.id}>
-                <View style={styles.treatmentItem}>
-                  <View style={styles.treatmentIconContainer}>
-                    <MaterialCommunityIcons name="medical-bag" size={24} color="#fff" />
-                  </View>
-                  <View style={styles.treatmentDetails}>
-                    <Text style={styles.treatmentName}>{treatment.name}</Text>
-                    <Text style={styles.treatmentType}>{treatment.type}</Text>
-                    <Text style={styles.treatmentDate}>Saved on: {treatment.saveDate}</Text>
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.treatmentActionButton}
-                    onPress={() => {
-                      // Toggle expanded state for this treatment
-                      setExpandedTreatment(prevId => prevId === treatment.id ? null : treatment.id);
-                    }}
-                  >
-                    <AntDesign name="right" size={16} color="#71b79c" />
-                  </TouchableOpacity>
-                </View>
-                
-                {/* Treatment details section */}
-                <View style={styles.diseaseDetailSection}>
-                  <Text style={styles.detailSectionTitle}>Treatment Options</Text>
-                  <Text style={styles.detailText}>
-                    • {treatment.treatments[0] || "Apply appropriate fungicide/pesticide"}
-                    {"\n"}
-                    • {treatment.treatments[1] || "Remove and destroy infected plant parts"}
-                    {"\n"}
-                    • {treatment.treatments[2] || "Improve air circulation around plants"}
-                    {"\n"}
-                    • {treatment.treatments[3] || "Maintain proper irrigation practices"}
-                  </Text>
-                </View>
-              </View>
-            ))}
+            {savedTreatments.map(renderTreatmentItem)}
           </View>
         );
-      default: // history
+      default:
         return (
           <View style={styles.tabContentContainer}>
-            {scanHistory.length > 0 ? (
-              scanHistory.map(scan => (
-                <View key={scan.id} style={styles.historyItem}>
-                  <Image source={{ uri: scan.image }} style={styles.historyImage} />
-                  <View style={styles.historyDetails}>
-                    <Text style={styles.historyPlantName}>{scan.plant}</Text>
-                    <Text style={[
-                      styles.historyDiagnosis, 
-                      scan.diagnosis === 'Healthy' ? styles.healthyText : styles.warningText
-                    ]}>
-                      {scan.diagnosis}
-                    </Text>
-                    <Text style={styles.historyDate}>{scan.date}</Text>
-                  </View>
-                  <TouchableOpacity style={styles.historyActionButton}>
-                    <MaterialCommunityIcons name="file-document-outline" size={20} color="#71b79c" />
-                  </TouchableOpacity>
-                </View>
-              ))
-            ) : (
-              <View style={styles.emptyStateContainer}>
-                <MaterialCommunityIcons name="image-search-outline" size={50} color="#71b79c" />
-                <Text style={styles.emptyStateText}>No scan history yet</Text>
-                <Text style={styles.emptyStateSubText}>Start scanning plants to build your history</Text>
-              </View>
-            )}
+            {medicines.map(renderMedicineItem)}
           </View>
         );
     }
@@ -320,12 +534,12 @@ const ProfileScreen = ({ navigation, route }) => {
               <Ionicons name="arrow-back" size={24} color="#ffffff" />
           </TouchableOpacity>
             <View style={styles.logoContainer}>
-              <Entypo name="leaf" size={24} color="#ffffff" />
+              
               <Text style={styles.logoText}>Profile</Text>
             </View>
             <TouchableOpacity style={styles.infoButton}>
-            <Feather name="info" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+            <Ionicons name="person-circle" size={30} color="#ffffff" />
+            </TouchableOpacity>
           </View>
         </Animated.View>
 
@@ -346,16 +560,10 @@ const ProfileScreen = ({ navigation, route }) => {
 
         <View style={styles.tabsContainer}>
           <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'history' && styles.activeTabButton]}
-            onPress={() => setActiveTab('history')}
+            style={[styles.tabButton, activeTab === 'medicines' && styles.activeTabButton]}
+            onPress={() => setActiveTab('medicines')}
           >
-            <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>Scan History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'plants' && styles.activeTabButton]}
-            onPress={() => setActiveTab('plants')}
-          >
-            <Text style={[styles.tabText, activeTab === 'plants' && styles.activeTabText]}>My Plants</Text>
+            <Text style={[styles.tabText, activeTab === 'medicines' && styles.activeTabText]}>Medicines</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tabButton, activeTab === 'treatments' && styles.activeTabButton]}
@@ -552,7 +760,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoText: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#ffffff',
     marginLeft: 10,
@@ -748,59 +956,120 @@ const styles = StyleSheet.create({
   plantActionButton: {
     padding: 8,
   },
-  treatmentItem: {
+  treatmentCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 2,
+  },
+  expandedCard: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 5.46,
+    elevation: 4,
+  },
+  treatmentSummary: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   treatmentIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: '#71b79c',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#f2f9f6',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 15,
   },
-  treatmentDetails: {
+  treatmentInfo: {
     flex: 1,
-    marginLeft: 15,
+    paddingHorizontal: 15,
   },
   treatmentName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: 'bold',
     color: '#2e5540',
+    marginBottom: 5,
   },
-  treatmentType: {
-    fontSize: 14,
-    color: '#4c5a55',
-    marginTop: 3,
+  treatmentTagContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  treatmentTag: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginRight: 10,
+    marginBottom: 3,
+  },
+  treatmentTagText: {
+    fontSize: 12,
+    color: '#2e5540',
+    fontWeight: '600',
   },
   treatmentDate: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 3,
+    color: '#4c5a55',
   },
-  treatmentActionButton: {
-    padding: 8,
+  expandIcon: {
+    padding: 5,
   },
-  diseaseDetailSection: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
+  expandedContent: {
+    marginTop: 10,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 10,
+  },
+  treatmentDetailSection: {
     marginBottom: 15,
   },
   detailSectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#2e5540',
     marginBottom: 8,
+  },
+  causesList: {
+    marginTop: 8,
+  },
+  causeItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    paddingHorizontal: 5,
+  },
+  treatmentsList: {
+    marginTop: 8,
+  },
+  treatmentItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    paddingHorizontal: 5,
   },
   detailText: {
     fontSize: 14,
     color: '#4c5a55',
     lineHeight: 22,
+    marginLeft: 8,
+    flex: 1,
   },
   optionsCard: {
     backgroundColor: '#fff',
@@ -1019,6 +1288,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  medicineType: {
+    fontSize: 14,
+    color: '#4c5a55',
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  cropTag: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  cropTagText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

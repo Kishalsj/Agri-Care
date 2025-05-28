@@ -31,10 +31,312 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [recentScans, setRecentScans] = useState([]);
   const [tipOfTheDay, setTipOfTheDay] = useState("");
+  const [showOtherScanner, setShowOtherScanner] = useState(false);
   
   const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(0))[0];
+
+  const diseaseInfo = {
+    "Pepper__bell___Bacterial_spot": {
+      causes: [
+        "Xanthomonas bacterial infection",
+        "High humidity and warm temperatures",
+        "Poor air circulation",
+        "Contaminated seeds or transplants",
+        "Overhead watering spreading bacteria"
+      ],
+      treatments: [
+        "Apply copper-based bactericides",
+        "Remove and destroy infected plant parts",
+        "Improve air circulation around plants",
+        "Use drip irrigation instead of overhead watering",
+        "Rotate crops to break disease cycle"
+      ]
+    },
+    "Pepper__bell___healthy": {
+      causes: [
+        "Plant appears to be in good health",
+        "Proper growing conditions maintained",
+        "No visible signs of disease or stress"
+      ],
+      treatments: [
+        "Continue current care routine",
+        "Monitor regularly for any changes",
+        "Maintain proper watering schedule",
+        "Ensure adequate nutrition",
+        "Keep area clean and well-ventilated"
+      ]
+    },
+    "Potato___Early_blight": {
+      causes: [
+        "Alternaria solani fungal infection",
+        "High humidity with moderate temperatures",
+        "Poor air circulation",
+        "Stressed or weakened plants",
+        "Contaminated soil or plant debris"
+      ],
+      treatments: [
+        "Apply fungicide containing chlorothalonil or mancozeb",
+        "Remove infected leaves immediately",
+        "Improve air circulation and spacing",
+        "Water at soil level to avoid wetting foliage",
+        "Clean up plant debris at end of season"
+      ]
+    },
+    "Potato___healthy": {
+      causes: [
+        "Plant appears to be in good health",
+        "Optimal growing conditions present",
+        "No visible disease symptoms"
+      ],
+      treatments: [
+        "Maintain current growing practices",
+        "Continue regular monitoring",
+        "Ensure proper soil drainage",
+        "Maintain consistent watering",
+        "Practice crop rotation"
+      ]
+    },
+    "Potato___Late_blight": {
+      causes: [
+        "Phytophthora infestans fungal infection",
+        "Cool, wet weather conditions",
+        "High humidity and moisture",
+        "Poor air circulation",
+        "Infected seed potatoes or nearby plants"
+      ],
+      treatments: [
+        "Apply fungicide with metalaxyl or mancozeb",
+        "Remove and destroy infected plants",
+        "Improve drainage and air circulation",
+        "Avoid overhead watering",
+        "Harvest early if weather conditions favor disease"
+      ]
+    },
+    "Tomato__Target_Spot": {
+      causes: [
+        "Corynespora cassiicola fungal infection",
+        "High humidity and warm temperatures",
+        "Poor air circulation",
+        "Overhead watering",
+        "Contaminated tools or soil"
+      ],
+      treatments: [
+        "Apply fungicide with azoxystrobin or chlorothalonil",
+        "Remove infected leaves and fruit",
+        "Improve air circulation with proper spacing",
+        "Use drip irrigation",
+        "Sanitize tools between plants"
+      ]
+    },
+    "Tomato__Tomato_mosaic_virus": {
+      causes: [
+        "Viral infection spread by contact",
+        "Contaminated tools or hands",
+        "Infected seeds or transplants",
+        "Mechanical transmission during handling",
+        "Tobacco use near plants"
+      ],
+      treatments: [
+        "Remove and destroy infected plants",
+        "Sanitize hands and tools with bleach solution",
+        "Use virus-free seeds and transplants",
+        "Control insect vectors",
+        "Avoid smoking around plants"
+      ]
+    },
+    "Tomato__Tomato_YellowLeaf__Curl_Virus": {
+      causes: [
+        "Begomovirus transmitted by whiteflies",
+        "High whitefly populations",
+        "Infected transplants",
+        "Nearby infected plants",
+        "Warm weather favoring whitefly activity"
+      ],
+      treatments: [
+        "Control whiteflies with insecticides or traps",
+        "Remove infected plants immediately",
+        "Use reflective mulches to deter whiteflies",
+        "Install fine mesh screens in greenhouses",
+        "Plant resistant varieties when available"
+      ]
+    },
+    "Tomato_Bacterial_spot": {
+      causes: [
+        "Xanthomonas bacterial infection",
+        "Warm, humid conditions",
+        "Overhead watering or rain splash",
+        "Contaminated seeds or transplants",
+        "Poor air circulation"
+      ],
+      treatments: [
+        "Apply copper-based bactericides",
+        "Remove infected plant parts",
+        "Use drip irrigation system",
+        "Increase plant spacing for air circulation",
+        "Rotate crops annually"
+      ]
+    },
+    "Tomato_Early_blight": {
+      causes: [
+        "Alternaria solani fungal infection",
+        "High humidity with warm temperatures",
+        "Poor air circulation",
+        "Stressed or aging plants",
+        "Contaminated soil debris"
+      ],
+      treatments: [
+        "Apply fungicide with chlorothalonil or mancozeb",
+        "Remove lower infected leaves",
+        "Mulch around plants to prevent soil splash",
+        "Water at soil level",
+        "Ensure adequate plant nutrition"
+      ]
+    },
+    "Tomato_healthy": {
+      causes: [
+        "Plant shows excellent health",
+        "Optimal growing conditions maintained",
+        "No disease symptoms present"
+      ],
+      treatments: [
+        "Continue current care practices",
+        "Monitor regularly for changes",
+        "Maintain consistent watering",
+        "Ensure proper nutrition",
+        "Keep growing area clean"
+      ]
+    },
+    "Tomato_Late_blight": {
+      causes: [
+        "Phytophthora infestans infection",
+        "Cool, wet weather conditions",
+        "High humidity and moisture",
+        "Infected seed or nearby plants",
+        "Poor air circulation"
+      ],
+      treatments: [
+        "Apply fungicide with metalaxyl or copper",
+        "Remove and destroy infected plants",
+        "Improve air circulation and drainage",
+        "Avoid overhead watering",
+        "Harvest green tomatoes if disease is severe"
+      ]
+    },
+    "Tomato_Leaf_Mold": {
+      causes: [
+        "Passalora fulva fungal infection",
+        "High humidity in enclosed spaces",
+        "Poor air circulation",
+        "Overhead watering",
+        "Crowded plant conditions"
+      ],
+      treatments: [
+        "Reduce humidity with ventilation",
+        "Remove infected leaves",
+        "Apply fungicide if necessary",
+        "Increase plant spacing",
+        "Water at soil level only"
+      ]
+    },
+    "Tomato_Septoria_leaf_spot": {
+      causes: [
+        "Septoria lycopersici fungal infection",
+        "Warm, humid weather",
+        "Overhead watering or rain splash",
+        "Contaminated soil or debris",
+        "Poor air circulation"
+      ],
+      treatments: [
+        "Apply fungicide with chlorothalonil",
+        "Remove infected lower leaves",
+        "Mulch to prevent soil splash",
+        "Use drip irrigation",
+        "Clean up plant debris"
+      ]
+    },
+    "Tomato_Spider_mites_Two_spotted_spider_mite": {
+      causes: [
+        "Two-spotted spider mite infestation",
+        "Hot, dry conditions",
+        "Dusty environment",
+        "Stressed plants",
+        "Lack of natural predators"
+      ],
+      treatments: [
+        "Apply miticide or insecticidal soap",
+        "Increase humidity around plants",
+        "Spray plants with water to remove mites",
+        "Introduce beneficial predatory mites",
+        "Remove heavily infested leaves"
+      ]
+    },
+    "Healthy": {
+      causes: [
+        "Plant demonstrates optimal health",
+        "Proper environmental conditions",
+        "No visible stress or disease"
+      ],
+      treatments: [
+        "Maintain current care routine",
+        "Continue regular health monitoring",
+        "Ensure consistent watering practices",
+        "Maintain proper nutrition levels",
+        "Keep growing environment clean"
+      ]
+    },
+    "Leaf_Gall_Forming": {
+      causes: [
+        "Bacterial or insect-induced gall formation",
+        "Agrobacterium or other bacterial infection",
+        "Insect egg laying or feeding damage",
+        "Genetic abnormalities",
+        "Environmental stress factors"
+      ],
+      treatments: [
+        "Remove affected leaves and branches",
+        "Apply appropriate bactericide if bacterial",
+        "Control insect vectors with pesticides",
+        "Improve plant health with proper nutrition",
+        "Monitor and remove new galls promptly"
+      ]
+    },
+    "leaf_spot_disease": {
+      causes: [
+        "Various fungal or bacterial pathogens",
+        "High humidity and moisture",
+        "Poor air circulation",
+        "Overhead watering",
+        "Contaminated tools or soil"
+      ],
+      treatments: [
+        "Apply broad-spectrum fungicide",
+        "Remove infected leaves immediately",
+        "Improve air circulation around plants",
+        "Use drip irrigation instead of overhead watering",
+        "Sanitize tools between plants"
+      ]
+    }
+  };
+
+  const getDiseaseInfo = (prediction) => {
+    return diseaseInfo[prediction] || {
+      causes: [
+        "Unknown or uncommon plant condition",
+        "Possible environmental stress",
+        "Potential pathogen infection",
+        "Further diagnosis may be needed"
+      ],
+      treatments: [
+        "Consult with local agricultural extension",
+        "Remove affected plant parts",
+        "Improve growing conditions",
+        "Monitor plant closely for changes",
+        "Consider professional plant diagnosis"
+      ]
+    };
+  };
   
-  // Animation for welcome banner
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -42,7 +344,6 @@ const Home = () => {
       useNativeDriver: true,
     }).start();
     
-    // Set up tip of the day
     const tips = [
       "Water your plants in the early morning to reduce evaporation.",
       "Rotate your crops to prevent soil depletion and reduce pest issues.",
@@ -53,30 +354,105 @@ const Home = () => {
     setTipOfTheDay(tips[Math.floor(Math.random() * tips.length)]);
   }, []);
 
+  const toggleOtherScanner = () => {
+    if (showOtherScanner) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setShowOtherScanner(false));
+    } else {
+      setShowOtherScanner(true);
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const onUpload = async (image) => {
     setSelectedImage(image.uri);
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
+    const uriParts = image.uri.split(".");
+    const extension = uriParts[uriParts.length - 1].toLowerCase();
+    const mimeType = `image/${extension === "jpg" ? "jpeg" : extension}`;
+
     const data = new FormData();
-    data.append('file', image);
+    data.append("file", {
+      uri: image.uri,
+      name: `photo.${extension}`,
+      type: mimeType,
+    });
 
     try {
-      const response = await axios.post(`${BASE_URL}/api/predict`, data);
-      if (response) {
-        setPrediction(response.data);
-        // Add to recent scans
-        const newScan = {
-          id: Date.now().toString(),
-          image: image.uri,
-          result: response.data.prediction,
-          date: new Date().toLocaleDateString()
-        };
-        setRecentScans(prev => [newScan, ...prev.slice(0, 4)]);
-      }
-    } catch (err) {
-      console.log(err.message);
-      alert('Error during prediction. Please try again.');
+      const response = await axios.post(`${BASE_URL}/api/predict`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const result = response.data;
+
+      setPrediction(result);
+
+      const newScan = {
+        id: Date.now().toString(),
+        image: image.uri,
+        result: result.prediction,
+        date: new Date().toLocaleDateString(),
+        type: 'general'
+      };
+      setRecentScans((prev) => [newScan, ...prev.slice(0, 4)]);
+    } catch (error) {
+      console.error(error.message);
+      alert("Error during prediction. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onUpload2 = async (image) => {
+    setSelectedImage(image.uri);
+    setLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const uriParts = image.uri.split(".");
+    const extension = uriParts[uriParts.length - 1].toLowerCase();
+    const mimeType = `image/${extension === "jpg" ? "jpeg" : extension}`;
+
+    const data = new FormData();
+    data.append("file", {
+      uri: image.uri,
+      name: `photo.${extension}`,
+      type: mimeType,
+    });
+
+    try {
+      const response = await axios.post(`${BASE_URL}/api/predictCinnamon`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const result = response.data;
+
+      setPrediction(result);
+
+      const newScan = {
+        id: Date.now().toString(),
+        image: image.uri,
+        result: result.prediction,
+        date: new Date().toLocaleDateString(),
+        type: 'cinnamon'
+      };
+      setRecentScans((prev) => [newScan, ...prev.slice(0, 4)]);
+    } catch (error) {
+      console.error(error.message);
+      alert("Error during prediction. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -87,35 +463,54 @@ const Home = () => {
     setSelectedImage('');
   };
 
-  const PositivePrediction = () => (
-    <View style={styles.predictionContainer}>
-      <Text style={styles.predictionTitle}>Prediction Results</Text>
-      <Ionicons name='md-warning' size={72} color='#e24d4d' />
-      <Text style={styles.predictionText}>
-        Your Plant May Be At Risk!
-      </Text>
-      <Text style={styles.conditionText}>
-        Condition: {prediction?.prediction}
-      </Text>
-      {/* <Text style={styles.accuracyText}>
-        Accuracy: {prediction?.probability}%
-      </Text> */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.reportButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.buttonText}>Detailed Report</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.newScanButton}
-          onPress={clearPrediction}
-        >
-          <Text style={styles.buttonText}>New Scan</Text>
-        </TouchableOpacity>
+  const PositivePrediction = () => {
+  const healthyPredictions = [
+    "Pepper__bell___healthy", 
+    "Potato___healthy", 
+    "Tomato_healthy", 
+    "Healthy"
+  ];
+  
+  const isHealthy = healthyPredictions.includes(prediction?.prediction);
+  
+    return (
+      <View style={styles.predictionContainer}>
+        <Text style={styles.predictionTitle}>Prediction Results</Text>
+        
+        {isHealthy ? (
+          <Ionicons name='checkmark-circle' size={72} color='#4CAF50' />
+        ) : (
+          <Ionicons name='warning' size={72} color='#e24d4d' />
+        )}
+        
+        <Text style={[
+          styles.predictionText, 
+          { color: isHealthy ? '#4CAF50' : '#e24d4d' }
+        ]}>
+          {isHealthy ? 'Your Plant is Healthy!' : 'Your Plant May Be At Risk!'}
+        </Text>
+        
+        <Text style={styles.conditionText}>
+          Condition: {prediction?.prediction}
+        </Text>
+        
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.reportButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.buttonText}>Detailed Report</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.newScanButton}
+            onPress={clearPrediction}
+          >
+            <Text style={styles.buttonText}>New Scan</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const PredictionImage = () => (
     <View style={styles.imagePreviewContainer}>
@@ -141,7 +536,7 @@ const Home = () => {
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#71b79c" />
+          <ActivityIndicator size="large" color="#8B4513" />
           <Text style={styles.loadingText}>Analyzing your plant...</Text>
         </View>
       );
@@ -172,13 +567,21 @@ const Home = () => {
           {recentScans.map(scan => (
             <TouchableOpacity 
               key={scan.id} 
-              style={styles.recentScanItem}
+              style={[
+                styles.recentScanItem,
+                scan.type === 'cinnamon' && styles.cinnamonRecentScan
+              ]}
               onPress={() => {
                 setSelectedImage(scan.image);
                 setPrediction({ prediction: scan.result, probability: "Previously Scanned" });
               }}
             >
               <Image source={{ uri: scan.image }} style={styles.recentScanImage} />
+              <View style={styles.scanTypeIndicator}>
+                <Text style={styles.scanTypeText}>
+                  {scan.type === 'cinnamon' ? '🌿 CINNAMON' : '🌱 GENERAL'}
+                </Text>
+              </View>
               <Text style={styles.recentScanResult} numberOfLines={1}>{scan.result}</Text>
               <Text style={styles.recentScanDate}>{scan.date}</Text>
             </TouchableOpacity>
@@ -188,77 +591,75 @@ const Home = () => {
     );
   };
 
-  const DetailedModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={modalVisible}
-      onRequestClose={() => setModalVisible(false)}
-    >
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setModalVisible(false)}
-          >
-            <AntDesign name="close" size={24} color="white" />
-          </TouchableOpacity>
-          
-          <Text style={styles.modalTitle}>Detailed Analysis</Text>
-          
-          <Image
-            source={{ uri: selectedImage }}
-            style={styles.modalImage}
-            resizeMode="cover"
-          />
-          
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Condition:</Text>
-              <Text style={styles.detailValue}>{prediction?.prediction}</Text>
-            </View>
+  const DetailedModal = () => {
+    const currentDiseaseInfo = getDiseaseInfo(prediction?.prediction);
+    
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <AntDesign name="close" size={24} color="white" />
+            </TouchableOpacity>
             
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Confidence:</Text>
-              <Text style={styles.detailValue}>{prediction?.probability}%</Text>
-            </View>
+            <Text style={styles.modalTitle}>Detailed Analysis</Text>
             
-            <View style={styles.detailSection}>
-              <Text style={styles.sectionTitle}>Possible Causes</Text>
-              <Text style={styles.sectionContent}>
-                • Fungal infection due to high humidity{"\n"}
-                • Insufficient air circulation{"\n"}
-                • Overwatering or poor drainage{"\n"}
-                • Soil contamination
-              </Text>
-            </View>
+            <Image
+              source={{ uri: selectedImage }}
+              style={styles.modalImage}
+              resizeMode="cover"
+            />
             
-            <View style={styles.detailSection}>
-              <Text style={styles.sectionTitle}>Recommended Actions</Text>
-              <Text style={styles.sectionContent}>
-                • Remove affected leaves immediately{"\n"}
-                • Apply fungicide treatment{"\n"}
-                • Improve air circulation around plants{"\n"}
-                • Adjust watering schedule{"\n"}
-                • Consider soil testing
-              </Text>
-            </View>
+            <ScrollView style={styles.modalScrollView}>
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Condition:</Text>
+                  <Text style={styles.detailValue}>{prediction?.prediction}</Text>
+                </View>
+                
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Confidence:</Text>
+                  <Text style={styles.detailValue}>{prediction?.probability}%</Text>
+                </View>
+                
+                <View style={styles.detailSection}>
+                  <Text style={styles.sectionTitle}>Possible Causes</Text>
+                  <Text style={styles.sectionContent}>
+                    {currentDiseaseInfo.causes.map((cause, index) => `• ${cause}`).join('\n')}
+                  </Text>
+                </View>
+                
+                <View style={styles.detailSection}>
+                  <Text style={styles.sectionTitle}>Recommended Actions</Text>
+                  <Text style={styles.sectionContent}>
+                    {currentDiseaseInfo.treatments.map((treatment, index) => `• ${treatment}`).join('\n')}
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+            
+            <TouchableOpacity
+              style={styles.treatmentButton}
+              onPress={() => {
+                setModalVisible(false);
+                alert("Treatment guide would open here");
+              }}
+            >
+              <Text style={styles.treatmentButtonText}>View Treatment Guide</Text>
+            </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity
-            style={styles.treatmentButton}
-            onPress={() => {
-              setModalVisible(false);
-              // Here you would navigate to treatment screen
-              alert("Treatment guide would open here");
-            }}
-          >
-            <Text style={styles.treatmentButtonText}>View Treatment Guide</Text>
-          </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -273,7 +674,6 @@ const Home = () => {
             <Text style={styles.logoText}>Agri-Care</Text>
           </View>
           <Text style={styles.headerSubtitle}>Plant Health Assistant</Text>
-          
         </Animated.View>
 
         <View style={styles.mainCard}>
@@ -286,8 +686,78 @@ const Home = () => {
 
           <TipOfTheDay />
           
-          <View style={styles.cameraContainer}>
-            <Camera handleUpload={onUpload} />
+          {/* Main Cinnamon Scanner */}
+          <View style={styles.cinnamonScannerContainer}>
+            <View style={styles.cinnamonHeader}>
+              <View style={styles.cinnamonTitleContainer}>
+                <MaterialCommunityIcons name="tree" size={25} color="#8B4513" />
+                <Text style={styles.cinnamonTitle}>Cinnamon Scanner</Text>
+                <View style={styles.specialistBadge}>
+                  <Text style={styles.specialistText}>SPECIALIST</Text>
+                </View>
+              </View>
+              <Text style={styles.cinnamonSubtitle}>
+                Advanced AI model specifically trained for cinnamon plant diseases
+              </Text>
+            </View>
+            
+            <View style={styles.cinnamonCameraSection}>
+              <Camera handleUpload={onUpload2} />
+            </View>
+
+            {/* Toggle for Other Scanner */}
+            <TouchableOpacity 
+              style={styles.toggleOtherScanner}
+              onPress={toggleOtherScanner}
+            >
+              <View style={styles.toggleContent}>
+                <MaterialCommunityIcons 
+                  name="flower" 
+                  size={20} 
+                  color="#666" 
+                />
+                <Text style={styles.toggleText}>
+                  Need to scan other plants?
+                </Text>
+                <MaterialCommunityIcons 
+                  name={showOtherScanner ? "chevron-up" : "chevron-down"} 
+                  size={20} 
+                  color="#666" 
+                />
+              </View>
+            </TouchableOpacity>
+
+            {/* Compact Other Scanner */}
+            {showOtherScanner && (
+              <Animated.View 
+                style={[
+                  styles.otherScannerContainer,
+                  {
+                    opacity: slideAnim,
+                    transform: [{
+                      translateY: slideAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-20, 0]
+                      })
+                    }]
+                  }
+                ]}
+              >
+                <View style={styles.otherScannerHeader}>
+                  <MaterialCommunityIcons name="leaf" size={20} color="#71b79c" />
+                  <Text style={styles.otherScannerTitle}>General Plant Scanner</Text>
+                  <View style={styles.generalBadge}>
+                    <Text style={styles.generalText}>GENERAL</Text>
+                  </View>
+                </View>
+                <Text style={styles.otherScannerSubtitle}>
+                  For other plant types and common diseases
+                </Text>
+                <View style={styles.otherCameraSection}>
+                  <Camera handleUpload={onUpload} />
+                </View>
+              </Animated.View>
+            )}
           </View>
           
           <View style={styles.predictionArea}>
@@ -312,7 +782,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#71b79c',
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
@@ -325,22 +795,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.27,
     shadowRadius: 4.65,
     elevation: 6,
+    alignItems: 'center',
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   logoText: {
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#ffffff',
     marginLeft: 10,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 16,
     color: '#ffffff',
     opacity: 0.8,
     marginTop: 5,
+    textAlign: 'center',
   },
   mainCard: {
     marginTop: 20,
@@ -403,21 +877,132 @@ const styles = StyleSheet.create({
     color: '#4c5a55',
     lineHeight: 22,
   },
-  cameraContainer: {
+  
+  cinnamonScannerContainer: {
     backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 15,
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 15,
-    shadowColor: "#000",
+    shadowColor: "#8B4513",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 3,
-    alignItems: 'center',
+    shadowOpacity: 0.2,
+    shadowRadius: 5.46,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#D2B48C',
   },
+  cinnamonHeader: {
+    marginBottom: 15,
+  },
+  cinnamonTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  cinnamonTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#8B4513',
+    marginLeft: 10,
+    flex: 1,
+  },
+  specialistBadge: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  specialistText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#8B4513',
+  },
+  cinnamonSubtitle: {
+    fontSize: 14,
+    color: '#A0522D',
+    lineHeight: 20,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  cinnamonCameraSection: {
+    backgroundColor: '#FFF8DC',
+    borderRadius: 15,
+    padding: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DEB887',
+  },
+  
+  toggleOtherScanner: {
+    marginTop: 15,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  toggleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleText: {
+    fontSize: 14,
+    color: '#666',
+    marginHorizontal: 8,
+    fontWeight: '500',
+  },
+  otherScannerContainer: {
+    marginTop: 15,
+    backgroundColor: '#f8fffe',
+    borderRadius: 12,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#b8e6d3',
+  },
+  otherScannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  otherScannerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#71b79c',
+    marginLeft: 8,
+    flex: 1,
+  },
+  generalBadge: {
+    backgroundColor: '#e8f5f0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#71b79c',
+  },
+  generalText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#71b79c',
+  },
+  otherScannerSubtitle: {
+    fontSize: 13,
+    color: '#5a9279',
+    marginBottom: 10,
+    fontStyle: 'italic',
+  },
+  otherCameraSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1e7dd',
+  },
+  
   predictionArea: {
     backgroundColor: '#ffffff',
     borderRadius: 15,
@@ -440,11 +1025,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   thumb: {
-    borderRadius: 15,
-    width: width * 0.7,
-    height: width * 0.7,
-    marginVertical: 10,
-  },
+  borderRadius: 15,
+  width: Math.min(width * 0.7, 280), // Max width of 280
+  height: Math.min(width * 0.7, 280), // Max height of 280
+  maxHeight: 250, // Additional constraint
+  marginVertical: 10,
+},
   cancelButton: {
     position: 'absolute',
     top: 20,
@@ -464,7 +1050,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#71b79c',
+    color: '#8B4513',
   },
   predictionContainer: {
     alignItems: 'center',
@@ -487,11 +1073,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#4c5a55',
     marginVertical: 5,
-  },
-  accuracyText: {
-    fontSize: 16,
-    color: '#4c5a55',
-    marginBottom: 15,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -566,11 +1147,31 @@ const styles = StyleSheet.create({
     marginRight: 15,
     alignItems: 'center',
   },
+  cinnamonRecentScan: {
+    borderWidth: 2,
+    borderColor: '#D2B48C',
+    borderRadius: 12,
+    padding: 8,
+    backgroundColor: '#FFF8DC',
+  },
   recentScanImage: {
     width: 100,
     height: 100,
     borderRadius: 10,
     marginBottom: 5,
+  },
+  scanTypeIndicator: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginBottom: 5,
+  },
+  scanTypeText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   recentScanResult: {
     fontSize: 14,
@@ -674,6 +1275,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  modalScrollView: {
+  maxHeight: height * 0.5,
+  width: '100%',
   },
 });
 
